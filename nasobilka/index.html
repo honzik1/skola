@@ -496,6 +496,49 @@
       font-size: 0.86rem;
     }
 
+    .history-section {
+      margin-top: 30px;
+      padding-top: 24px;
+      border-top: 1px solid var(--line);
+    }
+
+    .history-section h2 {
+      margin-bottom: 14px;
+    }
+
+    .history-table-wrapper {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .history-table {
+      width: 100%;
+      min-width: 560px;
+      border-collapse: collapse;
+      background: #fbfcff;
+      font-size: 0.86rem;
+      text-align: left;
+    }
+
+    .history-table th,
+    .history-table td {
+      padding: 11px 12px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+    }
+
+    .history-table th {
+      color: var(--muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+    }
+
+    .history-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
     @media (min-width: 600px) {
       .app-shell {
         padding: 34px 24px;
@@ -625,6 +668,24 @@
           <p id="settings-message" class="message error" role="alert" hidden></p>
           <button class="button" type="submit">Spustit test</button>
         </form>
+
+        <section id="history-section" class="history-section" aria-labelledby="history-title">
+          <h2 id="history-title">Posledních 20 testů</h2>
+          <p id="history-empty" class="helper-text">Zatím nebyl dokončen žádný test.</p>
+          <div class="history-table-wrapper">
+            <table id="history-table" class="history-table" hidden>
+              <thead>
+                <tr>
+                  <th scope="col">Dokončeno</th>
+                  <th scope="col">Popis testu</th>
+                  <th scope="col">Chyby</th>
+                  <th scope="col">Doba testu</th>
+                </tr>
+              </thead>
+              <tbody id="history-body"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
 
       <section id="quiz-screen" class="screen" aria-labelledby="quiz-title" hidden>
@@ -842,6 +903,9 @@
       const totalCount = document.querySelector('#total-count');
       const scorePercentage = document.querySelector('#score-percentage');
       const duration = document.querySelector('#duration');
+      const historyTable = document.querySelector('#history-table');
+      const historyEmpty = document.querySelector('#history-empty');
+      const historyBody = document.querySelector('#history-body');
       const newQuizButton = document.querySelector('#new-quiz-button');
       const screenElements = {
         settings: settingsScreen,
@@ -859,8 +923,10 @@
         startedAt: null,
         completedAt: null,
         durationMs: 0,
+        historyRecordSaved: false,
       };
       const SETTINGS_STORAGE_KEY = 'mathQuizSettings';
+      const HISTORY_STORAGE_KEY = 'mathQuizHistory';
 
       function getCurrentSettings() {
         return {
@@ -924,6 +990,91 @@
         }
       }
 
+      function buildTestDescription({ operations, selectedNumbers, questionCount }) {
+        const operationLabels = {
+          multiplication: 'Násobení',
+          division: 'Dělení',
+        };
+        const operationDescription = operations
+          .map((operation) => operationLabels[operation] || operation)
+          .join(' + ') || 'Žádná operace';
+        const numbersDescription = selectedNumbers.length > 0
+          ? selectedNumbers.join(', ')
+          : 'žádná';
+        return `${operationDescription}; násobilka ${numbersDescription}; ${questionCount} příkladů`;
+      }
+
+      function isValidHistoryRecord(record) {
+        return Boolean(
+          record
+          && typeof record === 'object'
+          && typeof record.completedAt === 'string'
+          && Number.isFinite(Date.parse(record.completedAt))
+          && typeof record.description === 'string'
+          && Number.isSafeInteger(record.incorrectCount)
+          && record.incorrectCount >= 0
+          && Number.isSafeInteger(record.durationMs)
+          && record.durationMs >= 0,
+        );
+      }
+
+      function loadHistory() {
+        let parsedHistory;
+        try {
+          const rawHistory = window.localStorage.getItem(HISTORY_STORAGE_KEY);
+          parsedHistory = rawHistory ? JSON.parse(rawHistory) : [];
+        } catch (error) {
+          return [];
+        }
+
+        if (!Array.isArray(parsedHistory)) {
+          return [];
+        }
+
+        return parsedHistory
+          .filter(isValidHistoryRecord)
+          .sort((left, right) => Date.parse(right.completedAt) - Date.parse(left.completedAt))
+          .slice(0, 20);
+      }
+
+      function saveCompletedTest(record) {
+        const history = [record, ...loadHistory()].slice(0, 20);
+        try {
+          window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
+        } catch (error) {
+          // localStorage can be unavailable in private or restricted browsing modes.
+        }
+      }
+
+      function formatCompletedAt(completedAt) {
+        return new Date(completedAt).toLocaleString('cs-CZ');
+      }
+
+      function renderHistory(records) {
+        historyBody.innerHTML = '';
+        historyEmpty.hidden = records.length > 0;
+        historyTable.hidden = records.length === 0;
+        records.forEach((record) => {
+          const row = document.createElement('tr');
+          [
+            formatCompletedAt(record.completedAt),
+            record.description,
+            String(record.incorrectCount),
+            window.MathQuiz.formatDuration(record.durationMs),
+          ].forEach((value) => {
+            const cell = document.createElement('td');
+            cell.textContent = value;
+            row.appendChild(cell);
+          });
+          historyBody.appendChild(row);
+        });
+      }
+
+      window.MathQuiz.buildTestDescription = buildTestDescription;
+      window.MathQuiz.loadHistory = loadHistory;
+      window.MathQuiz.saveCompletedTest = saveCompletedTest;
+      window.MathQuiz.renderHistory = renderHistory;
+
       function showScreen(screenName) {
         Object.entries(screenElements).forEach(([name, element]) => {
           const isActive = name === screenName;
@@ -982,6 +1133,21 @@
         totalCount.textContent = `Celkem ${total} příkladů`;
         scorePercentage.textContent = `${percentage} %`;
         duration.textContent = window.MathQuiz.formatDuration(state.durationMs);
+        if (!state.historyRecordSaved && state.completedAt !== null) {
+          state.historyRecordSaved = true;
+          const settings = getCurrentSettings();
+          saveCompletedTest({
+            completedAt: new Date(state.completedAt).toISOString(),
+            description: buildTestDescription({
+              operations: settings.operations,
+              selectedNumbers: settings.selectedNumbers,
+              questionCount: state.requestedCount,
+            }),
+            incorrectCount: state.incorrectCount,
+            durationMs: state.durationMs,
+          });
+          renderHistory(loadHistory());
+        }
         showScreen('results');
         resultsTitle.focus();
       }
@@ -1022,6 +1188,7 @@
         state.startedAt = null;
         state.completedAt = null;
         state.durationMs = 0;
+        state.historyRecordSaved = false;
         saveSettings();
 
         if (state.questions.length === 0) {
@@ -1092,12 +1259,14 @@
         state.startedAt = null;
         state.completedAt = null;
         state.durationMs = 0;
+        state.historyRecordSaved = false;
         quizNotice.hidden = true;
         setSettingsMessage('');
         showScreen('settings');
       });
 
       restoreSettings();
+      renderHistory(loadHistory());
     }
   </script>
 </body>

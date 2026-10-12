@@ -14,9 +14,12 @@ function loadMathQuiz() {
 
 const SETTINGS_STORAGE_KEY = 'mathQuizSettings';
 
+const HISTORY_STORAGE_KEY = 'mathQuizHistory';
+
 class FakeStorage {
   constructor(entries = {}) {
     this.values = new Map(Object.entries(entries));
+    this.setItemCalls = [];
   }
 
   getItem(key) {
@@ -24,8 +27,24 @@ class FakeStorage {
   }
 
   setItem(key, value) {
+    this.setItemCalls.push(key);
     this.values.set(key, String(value));
   }
+}
+
+function createControlledDate(clock) {
+  const NativeDate = Date;
+  function ControlledDate(...args) {
+    if (new.target) {
+      return args.length === 0 ? new NativeDate(clock.value) : new NativeDate(...args);
+    }
+    return NativeDate(...args);
+  }
+  ControlledDate.now = () => clock.value;
+  ControlledDate.parse = NativeDate.parse;
+  ControlledDate.UTC = NativeDate.UTC;
+  ControlledDate.prototype = NativeDate.prototype;
+  return ControlledDate;
 }
 
 class FakeElement {
@@ -37,6 +56,19 @@ class FakeElement {
     this.value = '';
     this.textContent = '';
     this.className = '';
+    this.children = [];
+    this._innerHTML = '';
+  }
+
+  get innerHTML() {
+    return this._innerHTML;
+  }
+
+  set innerHTML(value) {
+    this._innerHTML = value;
+    if (value === '') {
+      this.children = [];
+    }
   }
 
   addEventListener(type, listener) {
@@ -59,6 +91,11 @@ class FakeElement {
     this.ownerDocument.activeElement = this;
   }
 
+  appendChild(child) {
+    this.children.push(child);
+    return child;
+  }
+
   setAttribute() {}
 }
 
@@ -66,6 +103,9 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
   const document = { activeElement: null };
   const selectors = [
     '#settings-form',
+    '#history-table',
+    '#history-empty',
+    '#history-body',
     '#settings-screen',
     '#quiz-screen',
     '#results-screen',
@@ -114,6 +154,7 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
     return [];
   };
   document.querySelector = (selector) => elements[selector];
+  document.createElement = () => new FakeElement(document);
 
   const window = {
     localStorage: storage,
@@ -124,7 +165,7 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
   const context = {
     window,
     document,
-    Date: { now: () => clock.value },
+    Date: createControlledDate(clock),
   };
   vm.runInNewContext(
     fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')
@@ -141,6 +182,9 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
     answerInput: elements['#answer-input'],
     nextButton: elements['#next-button'],
     duration: elements['#duration'],
+    historyTable: elements['#history-table'],
+    historyEmpty: elements['#history-empty'],
+    historyBody: elements['#history-body'],
     operationInputs,
     tableInputs,
   };
@@ -336,4 +380,114 @@ test('saves the current test settings when they change', () => {
     selectedNumbers: [2, 5],
     questionCount: 15,
   });
+});
+
+test('stores a completed test with its description, errors, and duration', () => {
+  const storage = new FakeStorage();
+  const clock = { value: 1_000 };
+  const app = loadQuizApp(storage, clock);
+  app.tableInputs.forEach((input) => {
+    input.checked = ['3', '5'].includes(input.value);
+  });
+  app.questionCount.value = '1';
+  app.settingsForm.dispatchEvent('submit');
+
+  const [left, right] = app.questionExpression.textContent.split(' × ').map(Number);
+  app.answerInput.value = String(left * right);
+  clock.value = 6_000;
+  app.answerForm.dispatchEvent('submit');
+  app.nextButton.dispatchEvent('click');
+
+  const records = JSON.parse(storage.getItem(HISTORY_STORAGE_KEY));
+  assert.equal(records.length, 1);
+  assert.match(records[0].description, /Násobení/);
+  assert.match(records[0].description, /3, 5/);
+  assert.match(records[0].description, /1 příklad/);
+  assert.equal(records[0].incorrectCount, 0);
+  assert.equal(records[0].durationMs, 5_000);
+});
+
+test('prepends completed tests and keeps only the newest twenty records', () => {
+  const oldRecords = Array.from({ length: 20 }, (_, index) => ({
+    completedAt: new Date(index + 1).toISOString(),
+    description: `Starší test ${index + 1}`,
+    incorrectCount: index,
+    durationMs: index * 1_000,
+  }));
+  const storage = new FakeStorage({ [HISTORY_STORAGE_KEY]: JSON.stringify(oldRecords) });
+  const clock = { value: 30_000 };
+  const app = loadQuizApp(storage, clock);
+  app.questionCount.value = '1';
+  app.settingsForm.dispatchEvent('submit');
+  const [left, right] = app.questionExpression.textContent.split(' × ').map(Number);
+  app.answerInput.value = String(left * right);
+  app.nextButton.dispatchEvent('submit');
+  app.answerForm.dispatchEvent('submit');
+  app.nextButton.dispatchEvent('click');
+
+  const records = JSON.parse(storage.getItem(HISTORY_STORAGE_KEY));
+  assert.equal(records.length, 20);
+  assert.match(records[0].description, /Násobení/);
+  assert.equal(records.at(-1).description, 'Starší test 2');
+});
+
+test('ignores malformed history data and invalid records', () => {
+  const storage = new FakeStorage({
+    [HISTORY_STORAGE_KEY]: JSON.stringify([
+      { completedAt: 'not-a-date', description: 'Špatný záznam', incorrectCount: 0, durationMs: 1000 },
+      { completedAt: new Date(1).toISOString(), description: 'Platný záznam', incorrectCount: 1, durationMs: 1000 },
+      { description: 'Chybí datum' },
+    ]),
+  });
+  const app = loadQuizApp(storage);
+
+  assert.equal(app.historyBody.children.length, 1);
+  assert.match(app.historyBody.children[0].children[1].textContent, /Platný záznam/);
+});
+
+test('renders history newest first and shows an empty state when needed', () => {
+  const storage = new FakeStorage({
+    [HISTORY_STORAGE_KEY]: JSON.stringify([
+      { completedAt: new Date(2).toISOString(), description: 'Novější', incorrectCount: 0, durationMs: 2000 },
+      { completedAt: new Date(1).toISOString(), description: 'Starší', incorrectCount: 2, durationMs: 1000 },
+    ]),
+  });
+  const app = loadQuizApp(storage);
+
+  assert.equal(app.historyEmpty.hidden, true);
+  assert.equal(app.historyTable.hidden, false);
+  assert.equal(app.historyBody.children.length, 2);
+  assert.equal(app.historyBody.children[0].children[1].textContent, 'Novější');
+  assert.equal(app.historyBody.children[1].children[1].textContent, 'Starší');
+
+  const emptyApp = loadQuizApp(new FakeStorage());
+  assert.equal(emptyApp.historyEmpty.hidden, false);
+  assert.equal(emptyApp.historyTable.hidden, true);
+});
+
+test('handles unavailable localStorage without breaking the app', () => {
+  const unavailableStorage = {
+    getItem() {
+      throw new Error('blocked');
+    },
+    setItem() {
+      throw new Error('blocked');
+    },
+  };
+
+  assert.doesNotThrow(() => loadQuizApp(unavailableStorage));
+});
+
+test('writes a completed result only once when results are shown repeatedly', () => {
+  const storage = new FakeStorage();
+  const app = loadQuizApp(storage);
+  app.questionCount.value = '1';
+  app.settingsForm.dispatchEvent('submit');
+  const [left, right] = app.questionExpression.textContent.split(' × ').map(Number);
+  app.answerInput.value = String(left * right);
+  app.answerForm.dispatchEvent('submit');
+  app.nextButton.dispatchEvent('click');
+  app.nextButton.dispatchEvent('click');
+
+  assert.equal(JSON.parse(storage.getItem(HISTORY_STORAGE_KEY)).length, 1);
 });
