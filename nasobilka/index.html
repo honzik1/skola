@@ -1,0 +1,1031 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eef3ff">
+  <title>Matematický test</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --page: #eef3ff;
+      --card: #ffffff;
+      --ink: #17233c;
+      --muted: #62708b;
+      --line: #dbe3f2;
+      --primary: #315bea;
+      --primary-dark: #2346c1;
+      --primary-soft: #e8edff;
+      --success: #11734b;
+      --success-soft: #e6f7ef;
+      --error: #bd2d45;
+      --error-soft: #fff0f2;
+      --warning: #8a5a00;
+      --warning-soft: #fff6dc;
+      --shadow: 0 20px 60px rgba(41, 66, 126, 0.14);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      background: var(--page);
+      color: var(--ink);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    button:focus-visible,
+    input:focus-visible {
+      outline: 4px solid rgba(49, 91, 234, 0.25);
+      outline-offset: 2px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .app-shell {
+      display: grid;
+      min-height: 100vh;
+      place-items: center;
+      padding: 20px 14px;
+    }
+
+    .app-card {
+      width: min(100%, 680px);
+      overflow: hidden;
+      border: 1px solid rgba(219, 227, 242, 0.9);
+      border-radius: 28px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .app-header {
+      padding: 28px 22px 20px;
+      background: linear-gradient(135deg, #315bea, #6b7ff4);
+      color: #fff;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      opacity: 0.82;
+    }
+
+    h1,
+    h2,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: clamp(1.8rem, 8vw, 2.6rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      font-size: clamp(1.35rem, 5vw, 1.75rem);
+      letter-spacing: -0.025em;
+    }
+
+    .app-header p:last-child {
+      max-width: 46ch;
+      margin-bottom: 0;
+      color: rgba(255, 255, 255, 0.86);
+      line-height: 1.5;
+    }
+
+    .screen {
+      padding: 24px 22px 28px;
+    }
+
+    .section-intro {
+      margin-bottom: 22px;
+    }
+
+    .section-intro p,
+    .helper-text {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .section-intro p {
+      margin-bottom: 0;
+    }
+
+    fieldset {
+      min-width: 0;
+      margin: 0 0 22px;
+      padding: 0;
+      border: 0;
+    }
+
+    legend,
+    .field-label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--ink);
+      font-size: 0.92rem;
+      font-weight: 800;
+    }
+
+    .choice-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .choice {
+      display: flex;
+      min-height: 58px;
+      align-items: center;
+      gap: 13px;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fbfcff;
+      color: var(--ink);
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .choice:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .choice:has(input:disabled) {
+      cursor: default;
+    }
+
+    .choice input {
+      width: 21px;
+      height: 21px;
+      flex: 0 0 auto;
+      accent-color: var(--primary);
+    }
+
+    .choice-copy {
+      display: grid;
+      gap: 2px;
+    }
+
+    .choice-title {
+      font-weight: 800;
+    }
+
+    .choice-description {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .number-choice-list {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .number-choice {
+      display: flex;
+      min-height: 52px;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 6px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
+      color: var(--ink);
+      cursor: pointer;
+      transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    }
+
+    .number-choice:has(input:checked) {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+    }
+
+    .number-choice input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      accent-color: var(--primary);
+    }
+
+    .number-choice span {
+      font-weight: 800;
+    }
+
+    .number-choice-list + .helper-text {
+      margin: 12px 0 0;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .range-card,
+    .number-field {
+      display: grid;
+      align-content: center;
+      min-height: 92px;
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+    }
+
+    .range-card {
+      background: #f8faff;
+    }
+
+    .range-card strong {
+      margin-top: 5px;
+      font-size: 1.25rem;
+    }
+
+    .number-field input {
+      width: 100%;
+      min-height: 42px;
+      margin-top: 4px;
+      padding: 8px 11px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .button {
+      display: inline-flex;
+      min-height: 50px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 18px;
+      border-radius: 14px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 800;
+      transition: background 160ms ease, transform 160ms ease;
+    }
+
+    .button:hover:not(:disabled) {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+
+    .button.secondary {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--primary-dark);
+    }
+
+    .button.secondary:hover:not(:disabled) {
+      background: var(--primary-soft);
+    }
+
+    .message {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      line-height: 1.45;
+    }
+
+    .message.error,
+    .feedback.error {
+      background: var(--error-soft);
+      color: var(--error);
+    }
+
+    .message.warning,
+    .feedback.warning {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .quiz-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 750;
+    }
+
+    .quiz-toolbar strong {
+      color: var(--ink);
+    }
+
+    progress {
+      display: block;
+      width: 100%;
+      height: 9px;
+      margin-bottom: 26px;
+      overflow: hidden;
+      border: 0;
+      border-radius: 999px;
+      background: var(--primary-soft);
+    }
+
+    progress::-webkit-progress-bar {
+      background: var(--primary-soft);
+      border-radius: 999px;
+    }
+
+    progress::-webkit-progress-value {
+      border-radius: 999px;
+      background: var(--primary);
+    }
+
+    progress::-moz-progress-bar {
+      border-radius: 999px;
+      background: var(--primary);
+    }
+
+    .question-card {
+      padding: 22px 16px 26px;
+      border-radius: 20px;
+      background: #f5f7ff;
+      text-align: center;
+    }
+
+    .question-label {
+      margin-bottom: 12px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 750;
+    }
+
+    .question-expression {
+      color: var(--ink);
+      font-size: clamp(2.4rem, 14vw, 4.8rem);
+      font-weight: 850;
+      letter-spacing: -0.055em;
+      line-height: 1;
+    }
+
+    .answer-form {
+      margin-top: 22px;
+    }
+
+    .answer-form label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 800;
+    }
+
+    .answer-row {
+      display: grid;
+      gap: 10px;
+    }
+
+    .answer-row input {
+      width: 100%;
+      min-height: 56px;
+      padding: 10px 14px;
+      border: 2px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 1.45rem;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .feedback {
+      margin: 14px 0;
+      padding: 13px 15px;
+      border-radius: 14px;
+      font-weight: 750;
+      line-height: 1.45;
+      text-align: center;
+    }
+
+    .feedback.success {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .results {
+      text-align: center;
+    }
+
+    .results-intro {
+      margin-bottom: 22px;
+      color: var(--muted);
+    }
+
+    .score {
+      display: grid;
+      place-items: center;
+      width: 150px;
+      height: 150px;
+      margin: 0 auto 22px;
+      border: 10px solid var(--primary-soft);
+      border-radius: 50%;
+      background: #fff;
+      color: var(--primary-dark);
+      font-size: 2.45rem;
+      font-weight: 850;
+      line-height: 1;
+    }
+
+    .score small {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 750;
+    }
+
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+    }
+
+    .result-item {
+      padding: 15px 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fbfcff;
+    }
+
+    .result-number {
+      display: block;
+      margin-bottom: 3px;
+      font-size: 1.55rem;
+      font-weight: 850;
+    }
+
+    .result-label {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    @media (min-width: 600px) {
+      .app-shell {
+        padding: 34px 24px;
+      }
+
+      .app-header {
+        padding: 36px 38px 28px;
+      }
+
+      .screen {
+        padding: 34px 38px 40px;
+      }
+
+      .settings-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .answer-row {
+        grid-template-columns: 1fr auto;
+      }
+
+      .answer-row .button {
+        width: auto;
+        min-width: 210px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <div class="app-card">
+      <header class="app-header">
+        <p class="eyebrow">Procvičování bez stresu</p>
+        <h1>Matematický test</h1>
+        <p>Vyber si operace a čísla k procvičování, odpověz na příklady a na konci zjisti svůj výsledek.</p>
+      </header>
+
+      <section id="settings-screen" class="screen" aria-labelledby="settings-title">
+        <div class="section-intro">
+          <h2 id="settings-title">Nastavení testu</h2>
+          <p>Všechny příklady připravíme předem, takže se v testu žádný výraz nebude opakovat.</p>
+        </div>
+
+        <form id="settings-form" novalidate>
+          <fieldset>
+            <legend>Vyber operace</legend>
+            <div class="choice-list">
+              <label class="choice">
+                <input type="checkbox" name="operation" value="multiplication" checked>
+                <span class="choice-copy">
+                  <span class="choice-title">Násobení</span>
+                  <span class="choice-description">Například 6 × 4</span>
+                </span>
+              </label>
+              <label class="choice">
+                <input type="checkbox" name="operation" value="division">
+                <span class="choice-copy">
+                  <span class="choice-title">Dělení</span>
+                  <span class="choice-description">Výsledky budou vždy celá čísla</span>
+                </span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Vyber čísla k procvičování</legend>
+            <div class="number-choice-list">
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="1" checked>
+                <span>1</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="2" checked>
+                <span>2</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="3" checked>
+                <span>3</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="4" checked>
+                <span>4</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="5" checked>
+                <span>5</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="6" checked>
+                <span>6</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="7" checked>
+                <span>7</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="8" checked>
+                <span>8</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="9" checked>
+                <span>9</span>
+              </label>
+              <label class="number-choice">
+                <input type="checkbox" name="table-number" value="10" checked>
+                <span>10</span>
+              </label>
+            </div>
+            <p class="helper-text">Vybraná čísla budou prvními činiteli. Druhý činitel bude vždy od 1 do 10.</p>
+          </fieldset>
+
+          <div class="settings-grid">
+            <div class="range-card" aria-label="Rozsah druhého činitele od 1 do 10">
+              <span class="field-label">Druhý činitel</span>
+              <strong>1–10</strong>
+            </div>
+            <label class="number-field" for="question-count">
+              <span class="field-label">Počet příkladů</span>
+              <input id="question-count" name="question-count" type="number" min="1" step="1" value="20" inputmode="numeric" required>
+            </label>
+          </div>
+
+          <p id="settings-message" class="message error" role="alert" hidden></p>
+          <button class="button" type="submit">Spustit test</button>
+        </form>
+      </section>
+
+      <section id="quiz-screen" class="screen" aria-labelledby="quiz-title" hidden>
+        <div class="quiz-toolbar">
+          <span id="quiz-title">Postup testem</span>
+          <strong id="progress-label">Příklad 1 z 20</strong>
+        </div>
+        <progress id="progress-bar" max="20" value="1" aria-label="Průběh testu"></progress>
+        <p id="quiz-notice" class="message warning" role="status" hidden></p>
+
+        <div class="question-card">
+          <p class="question-label">Vypočítej</p>
+          <div id="question-expression" class="question-expression" aria-live="polite">1 × 1</div>
+        </div>
+
+        <form id="answer-form" class="answer-form">
+          <label for="answer-input">Tvoje odpověď</label>
+          <div class="answer-row">
+            <input id="answer-input" type="text" inputmode="numeric" autocomplete="off" aria-describedby="feedback" required>
+            <button id="check-button" class="button" type="submit">Zkontrolovat odpověď</button>
+          </div>
+        </form>
+
+        <div id="feedback" class="feedback" role="status" aria-live="polite" hidden></div>
+        <button id="next-button" class="button secondary" type="button" hidden>Další příklad</button>
+      </section>
+
+      <section id="results-screen" class="screen results" aria-labelledby="results-title" hidden>
+        <div class="section-intro">
+          <h2 id="results-title" tabindex="-1">Test je hotový</h2>
+          <p class="results-intro">Tady je tvoje výsledné skóre.</p>
+        </div>
+
+        <div class="score" aria-live="polite">
+          <div><span id="score-percentage">0 %</span><small>úspěšnost</small></div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-item">
+            <span id="correct-count" class="result-number">0</span>
+            <span class="result-label">správně</span>
+          </div>
+          <div class="result-item">
+            <span id="incorrect-count" class="result-number">0</span>
+            <span class="result-label">chybně</span>
+          </div>
+        </div>
+
+        <p id="total-count" class="helper-text">Celkem 0 příkladů</p>
+        <button id="new-quiz-button" class="button" type="button">Nový test</button>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (function exposeMathQuiz(global) {
+      const MAX_NUMBER = 10;
+      const TABLE_NUMBERS = Array.from({ length: MAX_NUMBER }, (_, index) => index + 1);
+
+      function createQuestion(text, answer, operation, key) {
+        return { text, answer, operation, key };
+      }
+
+      function normalizeSelectedNumbers(selectedNumbers) {
+        const numbers = selectedNumbers === undefined ? TABLE_NUMBERS : selectedNumbers;
+        return Array.from(new Set(
+          (Array.isArray(numbers) ? numbers : [])
+            .map(Number)
+            .filter((number) => Number.isInteger(number) && number >= 1 && number <= MAX_NUMBER),
+        )).sort((left, right) => left - right);
+      }
+
+      function buildQuestionPool(operations, selectedNumbers) {
+        const pool = [];
+        const selectedOperations = new Set(operations);
+        const selectedTables = normalizeSelectedNumbers(selectedNumbers);
+
+        if (selectedOperations.has('multiplication')) {
+          selectedTables.forEach((left) => {
+            for (let right = 1; right <= MAX_NUMBER; right += 1) {
+              pool.push(createQuestion(
+                `${left} × ${right}`,
+                left * right,
+                'multiplication',
+                `multiplication:${left}x${right}`,
+              ));
+            }
+          });
+        }
+
+        if (selectedOperations.has('division')) {
+          for (let dividend = 0; dividend <= MAX_NUMBER; dividend += 1) {
+            for (let divisor = 1; divisor <= MAX_NUMBER; divisor += 1) {
+              if (dividend % divisor === 0) {
+                pool.push(createQuestion(
+                  `${dividend} : ${divisor}`,
+                  dividend / divisor,
+                  'division',
+                  `division:${dividend}÷${divisor}`,
+                ));
+              }
+            }
+          }
+        }
+
+        return pool;
+      }
+
+      function shuffle(items, random) {
+        for (let index = items.length - 1; index > 0; index -= 1) {
+          const swapIndex = Math.floor(random() * (index + 1));
+          [items[index], items[swapIndex]] = [items[swapIndex], items[index]];
+        }
+        return items;
+      }
+
+      function generateQuestions({ operations, selectedNumbers, count, random = Math.random }) {
+        const pool = buildQuestionPool(operations, selectedNumbers);
+        shuffle(pool, random);
+        return pool.slice(0, Math.min(count, pool.length));
+      }
+
+      function gradeAnswer(expected, rawAnswer) {
+        const normalizedAnswer = String(rawAnswer ?? '').trim();
+        if (!/^-?\d+$/.test(normalizedAnswer)) {
+          return { status: 'invalid', value: null };
+        }
+
+        const value = Number(normalizedAnswer);
+        if (!Number.isSafeInteger(value)) {
+          return { status: 'invalid', value: null };
+        }
+
+        return {
+          status: value === expected ? 'correct' : 'incorrect',
+          value,
+        };
+      }
+
+      global.MathQuiz = { generateQuestions, gradeAnswer };
+    }(window));
+
+    if (typeof document !== 'undefined') {
+      const settingsForm = document.querySelector('#settings-form');
+      const settingsScreen = document.querySelector('#settings-screen');
+      const quizScreen = document.querySelector('#quiz-screen');
+      const resultsScreen = document.querySelector('#results-screen');
+      const settingsMessage = document.querySelector('#settings-message');
+      const questionCountInput = document.querySelector('#question-count');
+      const quizNotice = document.querySelector('#quiz-notice');
+      const progressLabel = document.querySelector('#progress-label');
+      const progressBar = document.querySelector('#progress-bar');
+      const questionExpression = document.querySelector('#question-expression');
+      const answerForm = document.querySelector('#answer-form');
+      const answerInput = document.querySelector('#answer-input');
+      const checkButton = document.querySelector('#check-button');
+      const feedback = document.querySelector('#feedback');
+      const nextButton = document.querySelector('#next-button');
+      const resultsTitle = document.querySelector('#results-title');
+      const correctCount = document.querySelector('#correct-count');
+      const incorrectCount = document.querySelector('#incorrect-count');
+      const totalCount = document.querySelector('#total-count');
+      const scorePercentage = document.querySelector('#score-percentage');
+      const newQuizButton = document.querySelector('#new-quiz-button');
+      const screenElements = {
+        settings: settingsScreen,
+        quiz: quizScreen,
+        results: resultsScreen,
+      };
+
+      const state = {
+        questions: [],
+        currentIndex: 0,
+        correctCount: 0,
+        incorrectCount: 0,
+        isAnswered: false,
+        requestedCount: 20,
+      };
+      const SETTINGS_STORAGE_KEY = 'mathQuizSettings';
+
+      function getCurrentSettings() {
+        return {
+          operations: Array.from(
+            settingsForm.querySelectorAll('input[name="operation"]:checked'),
+          ).map((input) => input.value),
+          selectedNumbers: Array.from(
+            settingsForm.querySelectorAll('input[name="table-number"]:checked'),
+          ).map((input) => Number(input.value)),
+          questionCount: Number(questionCountInput.value),
+        };
+      }
+
+      function saveSettings() {
+        const settings = getCurrentSettings();
+        if (!Number.isSafeInteger(settings.questionCount) || settings.questionCount < 1) {
+          return;
+        }
+
+        try {
+          window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+        } catch (error) {
+          // localStorage can be unavailable in private or restricted browsing modes.
+        }
+      }
+
+      function restoreSettings() {
+        let storedSettings;
+        try {
+          const rawSettings = window.localStorage.getItem(SETTINGS_STORAGE_KEY);
+          storedSettings = rawSettings ? JSON.parse(rawSettings) : null;
+        } catch (error) {
+          return;
+        }
+
+        if (!storedSettings || typeof storedSettings !== 'object') {
+          return;
+        }
+
+        if (Array.isArray(storedSettings.operations)) {
+          const operations = new Set(storedSettings.operations);
+          settingsForm.querySelectorAll('input[name="operation"]').forEach((input) => {
+            input.checked = operations.has(input.value);
+          });
+        }
+
+        if (Array.isArray(storedSettings.selectedNumbers)) {
+          const selectedNumbers = new Set(
+            storedSettings.selectedNumbers
+              .map(Number)
+              .filter((number) => Number.isInteger(number) && number >= 1 && number <= 10),
+          );
+          settingsForm.querySelectorAll('input[name="table-number"]').forEach((input) => {
+            input.checked = selectedNumbers.has(Number(input.value));
+          });
+        }
+
+        const questionCount = Number(storedSettings.questionCount);
+        if (Number.isSafeInteger(questionCount) && questionCount >= 1) {
+          questionCountInput.value = String(questionCount);
+        }
+      }
+
+      function showScreen(screenName) {
+        Object.entries(screenElements).forEach(([name, element]) => {
+          const isActive = name === screenName;
+          element.hidden = !isActive;
+          element.setAttribute('aria-hidden', String(!isActive));
+        });
+      }
+
+      function setSettingsMessage(message) {
+        settingsMessage.textContent = message;
+        settingsMessage.hidden = !message;
+      }
+
+      function setFeedback(message, type) {
+        feedback.textContent = message;
+        feedback.className = `feedback ${type}`;
+        feedback.hidden = false;
+      }
+
+      function renderQuestion() {
+        const question = state.questions[state.currentIndex];
+        if (!question) {
+          showResults();
+          return;
+        }
+
+        state.isAnswered = false;
+        progressLabel.textContent = `Příklad ${state.currentIndex + 1} z ${state.questions.length}`;
+        progressBar.max = state.questions.length;
+        progressBar.value = state.currentIndex + 1;
+        questionExpression.textContent = question.text;
+        answerInput.value = '';
+        answerInput.disabled = false;
+        checkButton.hidden = false;
+        checkButton.disabled = false;
+        feedback.textContent = '';
+        feedback.className = 'feedback';
+        feedback.hidden = true;
+        nextButton.hidden = true;
+        nextButton.textContent = state.currentIndex === state.questions.length - 1
+          ? 'Zobrazit výsledek'
+          : 'Další příklad';
+
+        window.setTimeout(() => answerInput.focus(), 0);
+      }
+
+      function showResults() {
+        const total = state.questions.length;
+        const percentage = total === 0 ? 0 : Math.round((state.correctCount / total) * 100);
+        correctCount.textContent = state.correctCount;
+        incorrectCount.textContent = state.incorrectCount;
+        totalCount.textContent = `Celkem ${total} příkladů`;
+        scorePercentage.textContent = `${percentage} %`;
+        showScreen('results');
+        resultsTitle.focus();
+      }
+
+      settingsForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        setSettingsMessage('');
+
+        const operations = Array.from(
+          settingsForm.querySelectorAll('input[name="operation"]:checked'),
+        ).map((input) => input.value);
+        const selectedNumbers = Array.from(
+          settingsForm.querySelectorAll('input[name="table-number"]:checked'),
+        ).map((input) => Number(input.value));
+        const count = Number(questionCountInput.value);
+
+        if (operations.length === 0) {
+          setSettingsMessage('Vyber alespoň jednu operaci.');
+          return;
+        }
+
+        if (selectedNumbers.length === 0) {
+          setSettingsMessage('Vyber alespoň jedno číslo k procvičování.');
+          return;
+        }
+
+        if (!Number.isSafeInteger(count) || count < 1) {
+          setSettingsMessage('Počet příkladů musí být celé číslo větší než 0.');
+          return;
+        }
+
+        state.questions = window.MathQuiz.generateQuestions({ operations, selectedNumbers, count });
+        state.currentIndex = 0;
+        state.correctCount = 0;
+        state.incorrectCount = 0;
+        state.isAnswered = false;
+        state.requestedCount = count;
+        saveSettings();
+
+        if (state.questions.length === 0) {
+          setSettingsMessage('Pro vybrané nastavení se nepodařilo vytvořit žádný příklad.');
+          return;
+        }
+
+        quizNotice.hidden = state.requestedCount <= state.questions.length;
+        quizNotice.textContent = `Pro toto zadání je k dispozici pouze ${state.questions.length} unikátních příkladů. Test bude mít ${state.questions.length} otázek.`;
+        showScreen('quiz');
+        renderQuestion();
+      });
+
+      answerForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        if (state.isAnswered) {
+          return;
+        }
+
+        const question = state.questions[state.currentIndex];
+        const result = window.MathQuiz.gradeAnswer(question.answer, answerInput.value);
+        if (result.status === 'invalid') {
+          setFeedback('Zadej celé číslo, prosím.', 'error');
+          answerInput.focus();
+          return;
+        }
+
+        state.isAnswered = true;
+        answerInput.disabled = true;
+        checkButton.hidden = true;
+        nextButton.hidden = false;
+
+        if (result.status === 'correct') {
+          state.correctCount += 1;
+          setFeedback('Správně! Výborně.', 'success');
+        } else {
+          state.incorrectCount += 1;
+          setFeedback(`Tentokrát ne. Správná odpověď je ${question.answer}.`, 'error');
+        }
+
+        nextButton.focus();
+      });
+
+      nextButton.addEventListener('click', () => {
+        if (!state.isAnswered) {
+          return;
+        }
+
+        if (state.currentIndex >= state.questions.length - 1) {
+          showResults();
+          return;
+        }
+
+        state.currentIndex += 1;
+        renderQuestion();
+      });
+
+      settingsForm.addEventListener('change', saveSettings);
+      questionCountInput.addEventListener('input', saveSettings);
+
+      newQuizButton.addEventListener('click', () => {
+        state.questions = [];
+        state.currentIndex = 0;
+        state.correctCount = 0;
+        state.incorrectCount = 0;
+        state.isAnswered = false;
+        quizNotice.hidden = true;
+        setSettingsMessage('');
+        showScreen('settings');
+      });
+
+      restoreSettings();
+    }
+  </script>
+</body>
+</html>
