@@ -564,6 +564,10 @@
             <legend>Vyber čísla k procvičování</legend>
             <div class="number-choice-list">
               <label class="number-choice">
+                <input type="checkbox" name="table-number" value="0" checked>
+                <span>0</span>
+              </label>
+              <label class="number-choice">
                 <input type="checkbox" name="table-number" value="1" checked>
                 <span>1</span>
               </label>
@@ -604,13 +608,13 @@
                 <span>10</span>
               </label>
             </div>
-            <p class="helper-text">Vybraná čísla budou prvními činiteli. Druhý činitel bude vždy od 1 do 10.</p>
+            <p class="helper-text">Vybraná čísla budou prvními činiteli. Druhý činitel bude vždy od 0 do 10.</p>
           </fieldset>
 
           <div class="settings-grid">
-            <div class="range-card" aria-label="Rozsah druhého činitele od 1 do 10">
+            <div class="range-card" aria-label="Rozsah druhého činitele od 0 do 10">
               <span class="field-label">Druhý činitel</span>
-              <strong>1–10</strong>
+              <strong>0–10</strong>
             </div>
             <label class="number-field" for="question-count">
               <span class="field-label">Počet příkladů</span>
@@ -678,7 +682,8 @@
   <script>
     (function exposeMathQuiz(global) {
       const MAX_NUMBER = 10;
-      const TABLE_NUMBERS = Array.from({ length: MAX_NUMBER }, (_, index) => index + 1);
+      const TABLE_NUMBERS = Array.from({ length: MAX_NUMBER + 1 }, (_, index) => index);
+      const EASY_NUMBERS = new Set([0, 1, 2]);
 
       function createQuestion(text, answer, operation, key) {
         return { text, answer, operation, key };
@@ -689,8 +694,16 @@
         return Array.from(new Set(
           (Array.isArray(numbers) ? numbers : [])
             .map(Number)
-            .filter((number) => Number.isInteger(number) && number >= 1 && number <= MAX_NUMBER),
+            .filter((number) => Number.isInteger(number) && number >= 0 && number <= MAX_NUMBER),
         )).sort((left, right) => left - right);
+      }
+
+      function isEasyQuestion(question) {
+        const separator = question.operation === 'multiplication' ? ' × ' : ' : ';
+        return question.text
+          .split(separator)
+          .map(Number)
+          .some((number) => EASY_NUMBERS.has(number));
       }
 
       function buildQuestionPool(operations, selectedNumbers) {
@@ -700,7 +713,7 @@
 
         if (selectedOperations.has('multiplication')) {
           selectedTables.forEach((left) => {
-            for (let right = 1; right <= MAX_NUMBER; right += 1) {
+            for (let right = 0; right <= MAX_NUMBER; right += 1) {
               pool.push(createQuestion(
                 `${left} × ${right}`,
                 left * right,
@@ -737,10 +750,37 @@
         return items;
       }
 
-      function generateQuestions({ operations, selectedNumbers, count, random = Math.random }) {
+      function selectQuestions(pool, count, { random = Math.random, easyLimit, limitEasy = true } = {}) {
+        const easyQuestions = [];
+        const otherQuestions = [];
+        pool.forEach((question) => {
+          (isEasyQuestion(question) ? easyQuestions : otherQuestions).push(question);
+        });
+        shuffle(easyQuestions, random);
+        shuffle(otherQuestions, random);
+
+        if (!limitEasy) {
+          const unrestrictedQuestions = shuffle(pool.slice(), random);
+          return unrestrictedQuestions.slice(0, Math.min(count, unrestrictedQuestions.length));
+        }
+
+        const maximumEasy = Math.max(
+          0,
+          Math.floor(easyLimit === undefined ? count * 0.05 : easyLimit),
+        );
+        const selectedEasy = easyQuestions.slice(0, Math.min(maximumEasy, count));
+        const selectedOther = otherQuestions.slice(0, Math.min(
+          otherQuestions.length,
+          count - selectedEasy.length,
+        ));
+        return shuffle([...selectedEasy, ...selectedOther], random);
+      }
+
+      function generateQuestions({ operations, selectedNumbers, count, random = Math.random, easyLimit }) {
         const pool = buildQuestionPool(operations, selectedNumbers);
-        shuffle(pool, random);
-        return pool.slice(0, Math.min(count, pool.length));
+        const selectedTables = normalizeSelectedNumbers(selectedNumbers);
+        const limitEasy = !selectedTables.some((number) => EASY_NUMBERS.has(number));
+        return selectQuestions(pool, count, { random, easyLimit, limitEasy });
       }
 
       function gradeAnswer(expected, rawAnswer) {
@@ -760,7 +800,7 @@
         };
       }
 
-      global.MathQuiz = { generateQuestions, gradeAnswer };
+      global.MathQuiz = { generateQuestions, gradeAnswer, isEasyQuestion, selectQuestions };
     }(window));
 
     if (typeof document !== 'undefined') {

@@ -94,8 +94,8 @@ function loadQuizApp(storage = new FakeStorage()) {
     { value: 'multiplication', checked: true },
     { value: 'division', checked: false },
   ];
-  const tableInputs = Array.from({ length: 10 }, (_, index) => ({
-    value: String(index + 1),
+  const tableInputs = Array.from({ length: 11 }, (_, index) => ({
+    value: String(index),
     checked: true,
   }));
   const settingsForm = elements['#settings-form'];
@@ -140,7 +140,7 @@ function loadQuizApp(storage = new FakeStorage()) {
   };
 }
 
-test('generates the selected multiplication table from 1 to 10', () => {
+test('generates the selected multiplication table from 0 to 10', () => {
   const mathQuiz = loadMathQuiz();
   const questions = mathQuiz.generateQuestions({
     operations: ['multiplication'],
@@ -149,10 +149,10 @@ test('generates the selected multiplication table from 1 to 10', () => {
     random: () => 0.5,
   });
 
-  assert.equal(questions.length, 10);
+  assert.equal(questions.length, 11);
   assert.deepEqual(
     new Set(questions.map((question) => question.text)),
-    new Set(Array.from({ length: 10 }, (_, index) => `2 × ${index + 1}`)),
+    new Set(Array.from({ length: 11 }, (_, index) => `2 × ${index}`)),
   );
 });
 
@@ -165,9 +165,92 @@ test('combines multiple selected multiplication tables without duplicates', () =
     random: () => 0.5,
   });
 
-  assert.equal(questions.length, 20);
-  assert.equal(new Set(questions.map((question) => question.key)).size, 20);
-  assert.ok(questions.every((question) => /^(2|5) × (?:[1-9]|10)$/.test(question.text)));
+  assert.equal(questions.length, 22);
+  assert.equal(new Set(questions.map((question) => question.key)).size, 22);
+  assert.ok(questions.every((question) => /^(2|5) × (?:[0-9]|10)$/.test(question.text)));
+});
+
+test('generates the complete selected table when the easy limit is explicitly raised', () => {
+  const mathQuiz = loadMathQuiz();
+  const questions = mathQuiz.generateQuestions({
+    operations: ['multiplication'],
+    selectedNumbers: [3],
+    count: 100,
+    easyLimit: 100,
+    random: () => 0.5,
+  });
+
+  assert.equal(questions.length, 11);
+  assert.deepEqual(
+    new Set(questions.map((question) => question.text)),
+    new Set(Array.from({ length: 11 }, (_, index) => `3 × ${index}`)),
+  );
+});
+
+test('limits easy examples to five percent when easy tables are not selected', () => {
+  const mathQuiz = loadMathQuiz();
+  const questions = mathQuiz.generateQuestions({
+    operations: ['multiplication'],
+    selectedNumbers: [3, 4, 5],
+    count: 20,
+    random: () => 0.5,
+  });
+
+  assert.ok(questions.filter((question) => mathQuiz.isEasyQuestion(question)).length <= 1);
+});
+
+test('does not limit easy examples when table two is selected', () => {
+  const mathQuiz = loadMathQuiz();
+  const questions = mathQuiz.generateQuestions({
+    operations: ['multiplication'],
+    selectedNumbers: [2, 3],
+    count: 100,
+    random: () => 0.5,
+  });
+
+  assert.equal(questions.length, 22);
+  assert.equal(questions.filter((question) => mathQuiz.isEasyQuestion(question)).length, 14);
+});
+
+test('shuffles unrestricted candidates before truncating the test', () => {
+  const mathQuiz = loadMathQuiz();
+  const questions = mathQuiz.generateQuestions({
+    operations: ['multiplication'],
+    selectedNumbers: [2],
+    count: 1,
+    random: () => 0,
+  });
+
+  assert.equal(questions[0].text, '2 × 1');
+});
+
+test('returns only available hard questions when the easy limit cannot fill the request', () => {
+  const mathQuiz = loadMathQuiz();
+  const questions = mathQuiz.generateQuestions({
+    operations: ['multiplication'],
+    selectedNumbers: [3],
+    count: 20,
+    random: () => 0.5,
+  });
+
+  assert.equal(questions.length, 9);
+  assert.equal(new Set(questions.map((question) => question.key)).size, 9);
+  assert.ok(questions.filter((question) => mathQuiz.isEasyQuestion(question)).length <= 1);
+});
+
+test('classifies zero dividends as easy and never generates division by zero', () => {
+  const mathQuiz = loadMathQuiz();
+  const questions = mathQuiz.generateQuestions({
+    operations: ['division'],
+    selectedNumbers: [3],
+    count: 100,
+    easyLimit: 100,
+    random: () => 0.5,
+  });
+
+  assert.ok(questions.some((question) => question.text.startsWith('0 :')));
+  assert.ok(questions.filter((question) => mathQuiz.isEasyQuestion(question)).length > 0);
+  assert.ok(questions.every((question) => !question.text.endsWith(': 0')));
 });
 
 test('moves focus to the next question button after checking an answer', () => {
