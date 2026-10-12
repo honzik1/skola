@@ -1074,8 +1074,9 @@
       window.MathQuiz.renderHistory = renderHistory;
 
       function showScreen(screenName) {
-        Object.entries(screenElements).forEach(([name, element]) => {
+        Object.keys(screenElements).forEach((name) => {
           const isActive = name === screenName;
+          const element = screenElements[name];
           element.hidden = !isActive;
           element.setAttribute('aria-hidden', String(!isActive));
         });

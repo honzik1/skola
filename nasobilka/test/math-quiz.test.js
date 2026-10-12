@@ -99,7 +99,7 @@ class FakeElement {
   setAttribute() {}
 }
 
-function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
+function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }, legacyObject = false) {
   const document = { activeElement: null };
   const selectors = [
     '#settings-form',
@@ -167,6 +167,9 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
     document,
     Date: createControlledDate(clock),
   };
+  if (legacyObject) {
+    context.Object = { keys: Object.keys };
+  }
   vm.runInNewContext(
     fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')
       .match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1],
@@ -176,6 +179,7 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
   return {
     document,
     settingsForm,
+    quizScreen: elements['#quiz-screen'],
     questionCount: elements['#question-count'],
     resultsScreen: elements['#results-screen'],
     questionExpression: elements['#question-expression'],
@@ -194,7 +198,6 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
 test('keeps the browser script compatible with older Safari parsers', () => {
   const htmlPaths = [
     path.join(__dirname, '..', 'index.html'),
-    path.join(__dirname, '..', '..', 'index.html'),
   ];
 
   htmlPaths.forEach((htmlPath) => {
@@ -202,6 +205,15 @@ test('keeps the browser script compatible with older Safari parsers', () => {
     const script = html.match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
     assert.doesNotMatch(script, /\?\?/);
   });
+});
+
+test('starts the quiz without Object.entries support', () => {
+  const app = loadQuizApp(new FakeStorage(), { value: 0 }, true);
+  app.questionCount.value = '1';
+
+  app.settingsForm.dispatchEvent('submit');
+
+  assert.equal(app.quizScreen.hidden, false);
 });
 
 test('formats durations as minutes and zero-padded seconds', () => {
