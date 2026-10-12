@@ -62,7 +62,7 @@ class FakeElement {
   setAttribute() {}
 }
 
-function loadQuizApp(storage = new FakeStorage()) {
+function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
   const document = { activeElement: null };
   const selectors = [
     '#settings-form',
@@ -84,6 +84,7 @@ function loadQuizApp(storage = new FakeStorage()) {
     '#incorrect-count',
     '#total-count',
     '#score-percentage',
+    '#duration',
     '#new-quiz-button',
     '#question-count',
   ];
@@ -120,7 +121,11 @@ function loadQuizApp(storage = new FakeStorage()) {
       callback();
     },
   };
-  const context = { window, document };
+  const context = {
+    window,
+    document,
+    Date: { now: () => clock.value },
+  };
   vm.runInNewContext(
     fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8')
       .match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1],
@@ -135,10 +140,19 @@ function loadQuizApp(storage = new FakeStorage()) {
     answerForm: elements['#answer-form'],
     answerInput: elements['#answer-input'],
     nextButton: elements['#next-button'],
+    duration: elements['#duration'],
     operationInputs,
     tableInputs,
   };
 }
+
+test('formats durations as minutes and zero-padded seconds', () => {
+  const mathQuiz = loadMathQuiz();
+
+  assert.equal(mathQuiz.formatDuration(0), '0 min 00 s');
+  assert.equal(mathQuiz.formatDuration(8_000), '0 min 08 s');
+  assert.equal(mathQuiz.formatDuration(127_000), '2 min 07 s');
+});
 
 test('generates the selected multiplication table from 0 to 10', () => {
   const mathQuiz = loadMathQuiz();
@@ -253,6 +267,21 @@ test('classifies zero dividends as easy and never generates division by zero', (
   assert.ok(questions.every((question) => !question.text.endsWith(': 0')));
 });
 
+test('measures the test from start until the final answer', () => {
+  const clock = { value: 0 };
+  const app = loadQuizApp(new FakeStorage(), clock);
+  app.questionCount.value = '1';
+  app.settingsForm.dispatchEvent('submit');
+
+  const [left, right] = app.questionExpression.textContent.split(' × ').map(Number);
+  app.answerInput.value = String(left * right);
+  clock.value = 127_000;
+  app.answerForm.dispatchEvent('submit');
+  app.nextButton.dispatchEvent('click');
+
+  assert.equal(app.duration.textContent, '2 min 07 s');
+});
+
 test('moves focus to the next question button after checking an answer', () => {
   const app = loadQuizApp();
   app.questionCount.value = '1';
@@ -270,7 +299,7 @@ test('restores the last test settings from localStorage', () => {
   const storage = new FakeStorage({
     [SETTINGS_STORAGE_KEY]: JSON.stringify({
       operations: ['division'],
-      selectedNumbers: [3, 7],
+      selectedNumbers: [0, 3, 7],
       questionCount: 12,
     }),
   });
@@ -285,7 +314,7 @@ test('restores the last test settings from localStorage', () => {
   );
   assert.deepEqual(
     app.tableInputs.filter((input) => input.checked).map((input) => Number(input.value)),
-    [3, 7],
+    [0, 3, 7],
   );
   assert.equal(app.questionCount.value, '12');
 });

@@ -671,6 +671,10 @@
             <span id="incorrect-count" class="result-number">0</span>
             <span class="result-label">chybně</span>
           </div>
+          <div class="result-item">
+            <span id="duration" class="result-number">0 min 00 s</span>
+            <span class="result-label">čas testu</span>
+          </div>
         </div>
 
         <p id="total-count" class="helper-text">Celkem 0 příkladů</p>
@@ -783,6 +787,13 @@
         return selectQuestions(pool, count, { random, easyLimit, limitEasy });
       }
 
+      function formatDuration(durationMs) {
+        const totalSeconds = Math.max(0, Math.floor(Number(durationMs) / 1000));
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes} min ${String(seconds).padStart(2, '0')} s`;
+      }
+
       function gradeAnswer(expected, rawAnswer) {
         const normalizedAnswer = String(rawAnswer ?? '').trim();
         if (!/^-?\d+$/.test(normalizedAnswer)) {
@@ -800,7 +811,13 @@
         };
       }
 
-      global.MathQuiz = { generateQuestions, gradeAnswer, isEasyQuestion, selectQuestions };
+      global.MathQuiz = {
+        generateQuestions,
+        gradeAnswer,
+        formatDuration,
+        isEasyQuestion,
+        selectQuestions,
+      };
     }(window));
 
     if (typeof document !== 'undefined') {
@@ -824,6 +841,7 @@
       const incorrectCount = document.querySelector('#incorrect-count');
       const totalCount = document.querySelector('#total-count');
       const scorePercentage = document.querySelector('#score-percentage');
+      const duration = document.querySelector('#duration');
       const newQuizButton = document.querySelector('#new-quiz-button');
       const screenElements = {
         settings: settingsScreen,
@@ -838,6 +856,9 @@
         incorrectCount: 0,
         isAnswered: false,
         requestedCount: 20,
+        startedAt: null,
+        completedAt: null,
+        durationMs: 0,
       };
       const SETTINGS_STORAGE_KEY = 'mathQuizSettings';
 
@@ -890,7 +911,7 @@
           const selectedNumbers = new Set(
             storedSettings.selectedNumbers
               .map(Number)
-              .filter((number) => Number.isInteger(number) && number >= 1 && number <= 10),
+              .filter((number) => Number.isInteger(number) && number >= 0 && number <= 10),
           );
           settingsForm.querySelectorAll('input[name="table-number"]').forEach((input) => {
             input.checked = selectedNumbers.has(Number(input.value));
@@ -952,10 +973,15 @@
       function showResults() {
         const total = state.questions.length;
         const percentage = total === 0 ? 0 : Math.round((state.correctCount / total) * 100);
+        if (state.completedAt === null && state.startedAt !== null) {
+          state.completedAt = Date.now();
+          state.durationMs = Math.max(0, state.completedAt - state.startedAt);
+        }
         correctCount.textContent = state.correctCount;
         incorrectCount.textContent = state.incorrectCount;
         totalCount.textContent = `Celkem ${total} příkladů`;
         scorePercentage.textContent = `${percentage} %`;
+        duration.textContent = window.MathQuiz.formatDuration(state.durationMs);
         showScreen('results');
         resultsTitle.focus();
       }
@@ -993,6 +1019,9 @@
         state.incorrectCount = 0;
         state.isAnswered = false;
         state.requestedCount = count;
+        state.startedAt = null;
+        state.completedAt = null;
+        state.durationMs = 0;
         saveSettings();
 
         if (state.questions.length === 0) {
@@ -1000,6 +1029,7 @@
           return;
         }
 
+        state.startedAt = Date.now();
         quizNotice.hidden = state.requestedCount <= state.questions.length;
         quizNotice.textContent = `Pro toto zadání je k dispozici pouze ${state.questions.length} unikátních příkladů. Test bude mít ${state.questions.length} otázek.`;
         showScreen('quiz');
@@ -1059,6 +1089,9 @@
         state.correctCount = 0;
         state.incorrectCount = 0;
         state.isAnswered = false;
+        state.startedAt = null;
+        state.completedAt = null;
+        state.durationMs = 0;
         quizNotice.hidden = true;
         setSettingsMessage('');
         showScreen('settings');
