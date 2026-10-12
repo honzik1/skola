@@ -177,6 +177,7 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
     document,
     settingsForm,
     questionCount: elements['#question-count'],
+    resultsScreen: elements['#results-screen'],
     questionExpression: elements['#question-expression'],
     answerForm: elements['#answer-form'],
     answerInput: elements['#answer-input'],
@@ -324,6 +325,7 @@ test('measures the test from start until the final answer', () => {
   app.nextButton.dispatchEvent('click');
 
   assert.equal(app.duration.textContent, '2 min 07 s');
+  assert.equal(app.document.activeElement, app.resultsScreen);
 });
 
 test('moves focus to the next question button after checking an answer', () => {

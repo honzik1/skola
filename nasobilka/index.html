@@ -713,9 +713,8 @@
         <button id="next-button" class="button secondary" type="button" hidden>Další příklad</button>
       </section>
 
-      <section id="results-screen" class="screen results" aria-labelledby="results-title" hidden>
+      <section id="results-screen" class="screen results" aria-label="Výsledky testu" tabindex="-1" hidden>
         <div class="section-intro">
-          <h2 id="results-title" tabindex="-1">Test je hotový</h2>
           <p class="results-intro">Tady je tvoje výsledné skóre.</p>
         </div>
 
@@ -897,7 +896,6 @@
       const checkButton = document.querySelector('#check-button');
       const feedback = document.querySelector('#feedback');
       const nextButton = document.querySelector('#next-button');
-      const resultsTitle = document.querySelector('#results-title');
       const correctCount = document.querySelector('#correct-count');
       const incorrectCount = document.querySelector('#incorrect-count');
       const totalCount = document.querySelector('#total-count');
@@ -1149,7 +1147,7 @@
           renderHistory(loadHistory());
         }
         showScreen('results');
-        resultsTitle.focus();
+        resultsScreen.focus();
       }
 
       settingsForm.addEventListener('submit', (event) => {
