@@ -251,6 +251,10 @@
       margin-bottom: 20px;
     }
 
+    .settings-grid-single {
+      grid-template-columns: 1fr;
+    }
+
     .range-card,
     .number-field {
       display: grid;
@@ -552,7 +556,7 @@
         padding: 34px 38px 40px;
       }
 
-      .settings-grid {
+      .settings-grid:not(.settings-grid-single) {
         grid-template-columns: 1fr 1fr;
       }
 
@@ -650,14 +654,9 @@
                 <span>10</span>
               </label>
             </div>
-            <p class="helper-text">Vybraná čísla budou prvními činiteli. Druhý činitel bude vždy od 0 do 10.</p>
           </fieldset>
 
-          <div class="settings-grid">
-            <div class="range-card" aria-label="Rozsah druhého činitele od 0 do 10">
-              <span class="field-label">Druhý činitel</span>
-              <strong>0–10</strong>
-            </div>
+          <div class="settings-grid settings-grid-single">
             <label class="number-field" for="question-count">
               <span class="field-label">Počet příkladů</span>
               <input id="question-count" name="question-count" type="number" min="1" step="1" value="20" inputmode="numeric" required>
