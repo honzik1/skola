@@ -191,6 +191,19 @@ function loadQuizApp(storage = new FakeStorage(), clock = { value: 0 }) {
   };
 }
 
+test('keeps the browser script compatible with older Safari parsers', () => {
+  const htmlPaths = [
+    path.join(__dirname, '..', 'index.html'),
+    path.join(__dirname, '..', '..', 'index.html'),
+  ];
+
+  htmlPaths.forEach((htmlPath) => {
+    const html = fs.readFileSync(htmlPath, 'utf8');
+    const script = html.match(/<script>\s*([\s\S]*?)\s*<\/script>/)[1];
+    assert.doesNotMatch(script, /\?\?/);
+  });
+});
+
 test('formats durations as minutes and zero-padded seconds', () => {
   const mathQuiz = loadMathQuiz();
 

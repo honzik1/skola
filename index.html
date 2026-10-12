@@ -855,7 +855,7 @@
       }
 
       function gradeAnswer(expected, rawAnswer) {
-        const normalizedAnswer = String(rawAnswer ?? '').trim();
+        const normalizedAnswer = String(rawAnswer == null ? '' : rawAnswer).trim();
         if (!/^-?\d+$/.test(normalizedAnswer)) {
           return { status: 'invalid', value: null };
         }
